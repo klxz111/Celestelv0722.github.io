@@ -49,17 +49,55 @@ window.addEventListener('DOMContentLoaded', event => {
 
     // Marked
     marked.use({ mangle: false, headerIds: false })
-    section_names.forEach((name, idx) => {
+    
+    // Load home content normally
+    fetch(content_dir + 'home.md')
+        .then(response => response.text())
+        .then(markdown => {
+            const html = marked.parse(markdown);
+            document.getElementById('home-md').innerHTML = html;
+            MathJax.typeset();
+        })
+        .catch(error => console.log(error));
+    
+    // Load other sections with summary/full content
+    const expandableSections = ['blog', 'misc', 'recent-readings'];
+    expandableSections.forEach(name => {
         fetch(content_dir + name + '.md')
             .then(response => response.text())
             .then(markdown => {
-                const html = marked.parse(markdown);
-                document.getElementById(name + '-md').innerHTML = html;
-            }).then(() => {
-                // MathJax
+                // Parse full content
+                const fullHtml = marked.parse(markdown);
+                document.getElementById(`${name}-full`).innerHTML = fullHtml;
+                
+                // Create summary (first 5 lines)
+                const summaryLines = markdown.split('\n').slice(0, 5);
+                const summaryText = summaryLines.join('\n');
+                const summaryHtml = marked.parse(summaryText);
+                document.getElementById(`${name}-summary`).innerHTML = summaryHtml;
+                
                 MathJax.typeset();
             })
             .catch(error => console.log(error));
-    })
+    });
+    
+    // Add toggle button functionality
+    document.querySelectorAll('.toggle-button').forEach(button => {
+        button.addEventListener('click', () => {
+            const target = button.getAttribute('data-target');
+            const summary = document.getElementById(`${target}-summary`);
+            const fullContent = document.getElementById(`${target}-full`);
+            
+            if (fullContent.style.display === 'none') {
+                summary.style.display = 'none';
+                fullContent.style.display = 'block';
+                button.textContent = '收起';
+            } else {
+                summary.style.display = 'block';
+                fullContent.style.display = 'none';
+                button.textContent = '展开全部';
+            }
+        });
+    });
 
 }); 
